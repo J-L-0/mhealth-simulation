@@ -5,6 +5,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(truncnorm)
 ```
 
 ```{r}
@@ -23,7 +24,59 @@ for(t in 1:(T-1)){
 }
 
 ## simulate the input data
-x=rnorm(T,mean = z,sd=sd)
+call_counts=rpois(T,3)
+text_counts=rpois(T,6)
+duration=rnorm()
+
+## simulate the outcome data
+p_2=c(0.3,0.7)
+rmultinom(n=3,size = 3,prob = p_2)
+```
+
+```{r}
+T=1460
+latent_class=2
+## generate transition matrix between latent state
+set.seed(1)
+m_1=round(rtruncnorm(n=T-3, a=0, b=1, mean=0.7, sd=0.1),2)     
+set.seed(1)
+m_2=round(rtruncnorm(n=T-3, a=0, b=1, mean=0.3, sd=0.1),2)
+
+
+m_3=1-m_1
+m_4=1-m_2
+p=as.list(rep(NA,T-3))
+i=1
+for (i in 1:(T-3)) {
+  p[[i]] = cbind(c(m_1[i],m_2[i]),c(m_3[i],m_4[i]))
+}
+
+sd=0.5
+
+## latent state
+set.seed(1)
+z=rep(NA,T)
+z[1]=1
+z[2]=1
+z[3]=1
+my_prob=rep(NULL,2)
+for(t in 1:(T-3)){
+  z_mean=round((z[t]+z[t+1]+z[t+2])/3)
+  my_prob=rbind(my_prob,p[[t]][z_mean,])
+  z[t+3]=sample(1:latent_class,size = 1,prob = my_prob[t,])
+}
+
+initial_call_counts=c(3,5,6)
+initial_text_counts=c(3,5,6)
+initial_duration=c(3,5,6)
+## simulate the input data
+## the call counts are determined by the probability of latent disease status of that day point
+set.seed(1)
+call_counts=c(initial_call_counts,rpois(T-3,round(7*my_prob[,2])))
+set.seed(1)
+text_counts=c(initial_text_counts,rpois(T-3,round(5*my_prob[,2])))
+set.seed(1)
+duration=c(initial_duration,round(rtruncnorm(n=T-3, a=0, b=10, mean=10*my_prob[,2], sd=1)))
 
 ## simulate the outcome data
 p_2=c(0.3,0.7)
