@@ -8,6 +8,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(truncnorm)
 ```
 
+## weijia's
+
 ```{r}
 T=1460
 latent_class=2
@@ -32,6 +34,8 @@ duration=rnorm()
 p_2=c(0.3,0.7)
 rmultinom(n=3,size = 3,prob = p_2)
 ```
+
+## update version
 
 ```{r}
 T=1460
