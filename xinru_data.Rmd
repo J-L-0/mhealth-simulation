@@ -7,22 +7,26 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+```{r}
+T=1460
+latent_class=2
+## when the state in time point t is 1, the probability of next point equals to 1 is 0.8
+p=cbind(c(0.8,0.2),c(0.2,0.8))
+sd=0.5
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## latent state
+set.seed(1)
+z=rep(NA,T)
+z[1]=1
+for(t in 1:(T-1)){
+  z[t+1]=sample(1:latent_class,size = 1,prob = p[z[t],])
+}
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## simulate the input data
+x=rnorm(T,mean = z,sd=sd)
 
-```{r cars}
-summary(cars)
+## simulate the outcome data
+p_2=c(0.3,0.7)
+rmultinom(n=3,size = 3,prob = p_2)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
