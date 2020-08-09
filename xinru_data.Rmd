@@ -80,10 +80,50 @@ call_counts=c(initial_call_counts,rpois(T-3,round(7*my_prob[,2])))
 set.seed(1)
 text_counts=c(initial_text_counts,rpois(T-3,round(5*my_prob[,2])))
 set.seed(1)
-duration=c(initial_duration,round(rtruncnorm(n=T-3, a=0, b=10, mean=10*my_prob[,2], sd=1)))
+duration=c(initial_duration,round(rtruncnorm(n=T-3, a=0, b=10, mean=10*my_prob[,2], sd=2)))
 
 ## simulate the outcome data
-p_2=c(0.3,0.7)
-rmultinom(n=3,size = 3,prob = p_2)
+i=1
+## set the initial prob
+class_prob=c(0.3,0.4,0.5)
+for(i in 1:(T-3)){
+  class_prob=c(class_prob,my_prob[i,2])
+}
+
+set.seed(1)
+p_2=as.list(rep(NA,T))
+i=1
+for (i in 1:T) {
+  class_2_prob=rtruncnorm(n=1,a=0,b=1,mean=class_prob[i],sd=0.05)
+  p_2[[i]] = c((1-class_2_prob),class_2_prob)
+}
+
+i=1
+survey_outcome=NULL
+set.seed(1)
+for (i in 1:T) {
+  survey_outcome=cbind(survey_outcome,rmultinom(n=1,size = 3,prob = p_2[[i]]))
+}
+
+
+survey_outcome=survey_outcome[1,]*1+survey_outcome[2,]*2
+
+complete_data=as.data.frame(cbind(call_counts,text_counts,duration,survey_outcome,z))
+
+## when latent state is 1
+sub_1=complete_data[which(z==1),]
+## when latent state is 2
+sub_2=complete_data[which(z==2),]
+plot(density(sub_1$survey_outcome))
+plot(density(sub_2$survey_outcome))
+
+plot(density(sub_1$call_counts))
+plot(density(sub_2$call_counts))
+
+plot(density(sub_1$text_counts))
+plot(density(sub_2$text_counts))
+
+plot(density(sub_1$duration))
+plot(density(sub_2$duration))
 ```
 
