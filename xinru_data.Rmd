@@ -114,15 +114,20 @@ complete_data=as.data.frame(cbind(call_counts,text_counts,duration,survey_outcom
 sub_1=complete_data[which(z==1),]
 ## when latent state is 2
 sub_2=complete_data[which(z==2),]
+
+## when latent state is 2, the survey outcome will be larger
 plot(density(sub_1$survey_outcome))
 plot(density(sub_2$survey_outcome))
 
+## when latent state is 2, the call counts will be larger
 plot(density(sub_1$call_counts))
 plot(density(sub_2$call_counts))
 
+## when latent state is 2, the text counts will be larger
 plot(density(sub_1$text_counts))
 plot(density(sub_2$text_counts))
 
+## when latent state is 2, the duration will be larger
 plot(density(sub_1$duration))
 plot(density(sub_2$duration))
 ```
