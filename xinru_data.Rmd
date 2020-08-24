@@ -6,6 +6,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(truncnorm)
+library(tidyverse)
 ```
 
 ## weijia's
@@ -108,35 +109,83 @@ for (i in 1:T) {
 
 survey_outcome=survey_outcome[1,]*1+survey_outcome[2,]*2
 
-complete_data=as.data.frame(cbind(call_counts,text_counts,duration,survey_outcome,z))
+complete_data=as.data.frame(cbind(call_counts,text_counts,duration,survey_outcome,z)) %>% 
+  mutate(
+    day=1:1460
+  )
 
 ## when latent state is 1
 sub_1=complete_data[which(z==1),]
 ## when latent state is 2
 sub_2=complete_data[which(z==2),]
 
+par(mfrow = c(1, 2)) 
 ## when latent state is 2, the survey outcome will be larger
-plot(density(sub_1$survey_outcome),xlab = "",main = "Density of survey score when latent state is nondisease")
+plot(density(sub_1$survey_outcome),xlab = "",main = "Density of survey score when latent state is nondisease",cex.main=0.7,cex.lab=0.7,cex.axis=0.7)
 lines(x=c(mean(sub_1$survey_outcome),mean(sub_1$survey_outcome)),y=c(-0.5,0.6),col="red",lty=2)
-plot(density(sub_2$survey_outcome),xlab = "",main = "Density of survey score when latent state is nondisease")
+plot(density(sub_2$survey_outcome),xlab = "",main = "Density of survey score when latent state is disease",cex.main=0.7,cex.lab=0.7,cex.axis=0.7)
 lines(x=c(mean(sub_2$survey_outcome),mean(sub_2$survey_outcome)),y=c(-0.5,0.6),col="red",lty=2)
 
+par(mfrow = c(3, 2)) 
 ## when latent state is 2, the call counts will be larger
-plot(density(sub_1$call_counts),xlab = "",main = "Density of call counts when latent state is nondisease")
+plot(density(sub_1$call_counts),xlab = "",main = "Density of call counts when latent state is nondisease",cex.main=0.7,cex.lab=0.7,cex.axis=0.7)
 lines(x=c(mean(sub_1$call_counts),mean(sub_1$call_counts)),y=c(-0.5,0.6),col="red",lty=2)
-plot(density(sub_2$call_counts),xlab = "",main = "Density of call counts when latent state is nondisease")
+plot(density(sub_2$call_counts),xlab = "",main = "Density of call counts when latent state is disease",cex.main=0.7,cex.lab=0.7,cex.axis=0.7)
 lines(x=c(mean(sub_2$call_counts),mean(sub_2$call_counts)),y=c(-0.5,0.6),col="red",lty=2)
 
 ## when latent state is 2, the text counts will be larger
-plot(density(sub_1$text_counts),xlab = "",main = "Density of text counts when latent state is nondisease")
+plot(density(sub_1$text_counts),xlab = "",main = "Density of text counts when latent state is nondisease",cex.main=0.7,cex.lab=0.7,cex.axis=0.7)
 lines(x=c(mean(sub_1$text_counts),mean(sub_1$text_counts)),y=c(-0.5,0.6),col="red",lty=2)
-plot(density(sub_2$text_counts),xlab = "",main = "Density of text counts when latent state is disease")
+plot(density(sub_2$text_counts),xlab = "",main = "Density of text counts when latent state is disease",cex.main=0.7,cex.lab=0.7,cex.axis=0.7)
 lines(x=c(mean(sub_2$text_counts),mean(sub_2$text_counts)),y=c(-0.5,0.6),col="red",lty=2)
 
 ## when latent state is 2, the duration will be larger
-plot(density(sub_1$duration),xlab = "",main = "Density of duration when latent state is nondisease")
+plot(density(sub_1$duration),xlab = "",main = "Density of duration when latent state is nondisease",cex.main=0.7,cex.lab=0.7,cex.axis=0.7)
 lines(x=c(mean(sub_1$duration),mean(sub_1$duration)),y=c(-0.5,0.6),col="red",lty=2)
-plot(density(sub_2$duration),xlab = "",main = "Density of duration when latent state is disease")
+plot(density(sub_2$duration),xlab = "",main = "Density of duration when latent state is disease",cex.main=0.7,cex.lab=0.7,cex.axis=0.7)
 lines(x=c(mean(sub_2$duration),mean(sub_2$duration)),y=c(-0.5,0.6),col="red",lty=2)
+
+plot(complete_data$z,xlim = c(0,200),xlab = "Day point",main = "Latent disease state plot",ylab="Latent disease status")
 ```
+
+## missing data generation
+
+```{r}
+set.seed(1)
+response_mcar=rbinom(T,size=1,prob = rtruncnorm(T,mean = 0.6,sd=0.1,a=0,b=1))
+length(response_mcar[which(response_mcar==1)])/length(response_mcar)
+
+set.seed(1)
+z_resp_mar=2.5-0.3*complete_data$call_counts-0.4*complete_data$text_counts
+pr_resp_mar=(1/(1+exp(-z_resp_mar)))
+response_mar=rbinom(T,size=1,prob = pr_resp_mar)
+
+length(response_mar[which(response_mar==1)])/length(response_mar)
+
+set.seed(1)
+z_resp_mnar=2.7-0.6*survey_outcome
+pr_resp_mnar=(1/(1+exp(-z_resp_mnar)))
+response_mnar=rbinom(T,size=1,prob = pr_resp_mnar)
+length(response_mnar[which(response_mnar==1)])/length(response_mnar)
+
+
+mcar_dataset=cbind(complete_data,response_mcar)
+mcar_dataset[which(response_mcar==0),4]=NA
+as.data.frame(mcar_dataset)
+
+mar_dataset=cbind(complete_data,response_mar)
+mar_dataset[which(response_mar==0),4]=NA
+as.data.frame(mar_dataset)
+
+mnar_dataset=cbind(complete_data,response_mnar)
+mnar_dataset[which(response_mnar==0),4]=NA
+as.data.frame(mnar_dataset)
+
+write.csv(mcar_dataset,"mcar_dataset")
+write.csv(mar_dataset,"mar_dataset")
+write.csv(mnar_dataset,"mnar_dataset")
+write.csv(complete_data,"complete_data")
+```
+
+
 
