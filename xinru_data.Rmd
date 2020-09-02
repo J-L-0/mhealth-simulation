@@ -168,40 +168,18 @@ response_mnar=rbinom(T,size=1,prob = pr_resp_mnar)
 length(response_mnar[which(response_mnar==1)])/length(response_mnar)
 
 
-mcar_dataset=cbind(complete_data,response_mcar) %>% 
-  mutate(
-    call_counts=as.factor(call_counts),
-    text_counts=as.factor(text_counts),
-    duration=as.factor(duration),
-    survey_outcome=as.factor(survey_outcome)
-  )
+mcar_dataset=cbind(complete_data,response_mcar)
 mcar_dataset[which(response_mcar==0),4]=NA
 as.data.frame(mcar_dataset)
 
-mar_dataset=cbind(complete_data,response_mar)%>% 
-  mutate(
-    call_counts=as.factor(call_counts),
-    text_counts=as.factor(text_counts),
-    duration=as.factor(duration),
-    survey_outcome=as.factor(survey_outcome)
-  )
+mar_dataset=cbind(complete_data,response_mar)
 mar_dataset[which(response_mar==0),4]=NA
 as.data.frame(mar_dataset)
 
-mnar_dataset=cbind(complete_data,response_mnar)%>% 
-  mutate(
-    call_counts=as.factor(call_counts),
-    text_counts=as.factor(text_counts),
-    duration=as.factor(duration),
-    survey_outcome=as.factor(survey_outcome)
-  )
+mnar_dataset=cbind(complete_data,response_mnar)
 mnar_dataset[which(response_mnar==0),4]=NA
 as.data.frame(mnar_dataset)
 
-write.csv(mcar_dataset,"mcar_dataset")
-write.csv(mar_dataset,"mar_dataset")
-write.csv(mnar_dataset,"mnar_dataset")
-write.csv(complete_data,"complete_data")
 ```
 
 ## impute missing value
@@ -210,48 +188,57 @@ write.csv(complete_data,"complete_data")
 
 ```{r}
 set.seed(1)
-imputed_data_mcar <- mice(mcar_dataset[1:4], m=5, maxit = 50, method = 'polr', seed = 500)
+imputed_data_mcar <- mice(mcar_dataset[1:4], m=5, maxit = 50, method = 'pmm', seed = 500)
 summary(imputed_data_mcar)
 imputed_data_mcar$imp$survey_outcome
-completeData_mcar <- complete(imputed_data_mcar,2)
+completeData_mcar=complete(imputed_data_mcar,2)
+mcar_dataset$imputed_survey_outcome_mice=completeData_mcar$survey_outcome
 
 set.seed(1)
-imputed_data_mar <- mice(mar_dataset[1:4], m=5, maxit = 50, method = 'polr', seed = 500)
+imputed_data_mar <- mice(mar_dataset[1:4], m=5, maxit = 50, method = 'pmm', seed = 500)
 completeData_mar <- complete(imputed_data_mar,2)
+mar_dataset$imputed_survey_outcome_mice=completeData_mar$survey_outcome
 
 set.seed(1)
-imputed_data_mnar <- mice(mcar_dataset[1:4], m=5, maxit = 50, method = 'polr', seed = 500)
+imputed_data_mnar <- mice(mcar_dataset[1:4], m=5, maxit = 50, method = 'pmm', seed = 500)
 completeData_mnar <- complete(imputed_data_mnar,2)
+mnar_dataset$imputed_survey_outcome_mice=completeData_mnar$survey_outcome
 
 ```
 
 ## mean
 ```{r}
-mcar_dataset$imputed_survey_outcome=with(mcar_dataset,impute(survey_outcome,mean))
-mar_dataset$imputed_survey_outcome=with(mar_dataset,impute(survey_outcome,mean))
-mnar_dataset$imputed_survey_outcome=with(mnar_dataset,impute(survey_outcome,mean))
+mcar_dataset$imputed_survey_outcome_mean=with(mcar_dataset,round(impute(survey_outcome,mean)),0)
+mar_dataset$imputed_survey_outcome_mean=with(mar_dataset,round(impute(survey_outcome,mean)),0)
+mnar_dataset$imputed_survey_outcome_mean=with(mnar_dataset,round(impute(survey_outcome,mean)),0)
 ```
 
 ## forward
 ```{r}
-mcar_dataset$imputed_survey_outcome_forward=LOCF(as.numeric(mcar_dataset$survey_outcome)+2)
-mar_dataset$imputed_survey_outcome_forward=LOCF(as.numeric(mar_dataset$survey_outcome)+2)
-mnar_dataset$imputed_survey_outcome_forward=LOCF(as.numeric(mnar_dataset$survey_outcome)+2)
+mcar_dataset$imputed_survey_outcome_forward=LOCF(mcar_dataset$survey_outcome)
+mar_dataset$imputed_survey_outcome_forward=LOCF(mar_dataset$survey_outcome)
+mnar_dataset$imputed_survey_outcome_forward=LOCF(mnar_dataset$survey_outcome)
 ```
 
 ## Missforest
 ```{r}
 set.seed(1)
-mcar_miss_impute=missForest(mcar_dataset)
-mcar_dataset$imputed_survey_outcome_missforest=mcar_miss_impute$ximp$survey_outcome
+mcar_miss_impute=missForest(mcar_dataset[,1:4])
+mcar_dataset$imputed_survey_outcome_missforest=round(mcar_miss_impute$ximp$survey_outcome,0)
 
 set.seed(1)
-mar_miss_impute=missForest(mar_dataset)
-mar_dataset$imputed_survey_outcome_missforest=mar_miss_impute$ximp$survey_outcome
+mar_miss_impute=missForest(mar_dataset[,1:4])
+mar_dataset$imputed_survey_outcome_missforest=round(mar_miss_impute$ximp$survey_outcome,0)
 
 set.seed(1)
-mnar_miss_impute=missForest(mnar_dataset)
-mnar_dataset$imputed_survey_outcome_missforest=mnar_miss_impute$ximp$survey_outcome
+mnar_miss_impute=missForest(mcar_dataset[,1:4])
+mnar_dataset$imputed_survey_outcome_missforest=round(mnar_miss_impute$ximp$survey_outcome,0)
 ```
 
+```{r}
+write_csv(mcar_dataset,"mcar_dataset")
+write_csv(mar_dataset,"mar_dataset")
+write_csv(mnar_dataset,"mnar_dataset")
+write_csv(complete_data,"complete_data")
+```
 
