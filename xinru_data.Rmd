@@ -29,7 +29,6 @@ for(t in 1:(T-1)){
 ## simulate the input data
 call_counts=rpois(T,3)
 text_counts=rpois(T,6)
-duration=rnorm()
 
 ## simulate the outcome data
 p_2=c(0.3,0.7)
@@ -169,15 +168,33 @@ response_mnar=rbinom(T,size=1,prob = pr_resp_mnar)
 length(response_mnar[which(response_mnar==1)])/length(response_mnar)
 
 
-mcar_dataset=cbind(complete_data,response_mcar)
+mcar_dataset=cbind(complete_data,response_mcar) %>% 
+  mutate(
+    call_counts=as.factor(call_counts),
+    text_counts=as.factor(text_counts),
+    duration=as.factor(duration),
+    survey_outcome=as.factor(survey_outcome)
+  )
 mcar_dataset[which(response_mcar==0),4]=NA
 as.data.frame(mcar_dataset)
 
-mar_dataset=cbind(complete_data,response_mar)
+mar_dataset=cbind(complete_data,response_mar)%>% 
+  mutate(
+    call_counts=as.factor(call_counts),
+    text_counts=as.factor(text_counts),
+    duration=as.factor(duration),
+    survey_outcome=as.factor(survey_outcome)
+  )
 mar_dataset[which(response_mar==0),4]=NA
 as.data.frame(mar_dataset)
 
-mnar_dataset=cbind(complete_data,response_mnar)
+mnar_dataset=cbind(complete_data,response_mnar)%>% 
+  mutate(
+    call_counts=as.factor(call_counts),
+    text_counts=as.factor(text_counts),
+    duration=as.factor(duration),
+    survey_outcome=as.factor(survey_outcome)
+  )
 mnar_dataset[which(response_mnar==0),4]=NA
 as.data.frame(mnar_dataset)
 
@@ -187,5 +204,54 @@ write.csv(mnar_dataset,"mnar_dataset")
 write.csv(complete_data,"complete_data")
 ```
 
+## impute missing value
+
+#### MICE
+
+```{r}
+set.seed(1)
+imputed_data_mcar <- mice(mcar_dataset[1:4], m=5, maxit = 50, method = 'polr', seed = 500)
+summary(imputed_data_mcar)
+imputed_data_mcar$imp$survey_outcome
+completeData_mcar <- complete(imputed_data_mcar,2)
+
+set.seed(1)
+imputed_data_mar <- mice(mar_dataset[1:4], m=5, maxit = 50, method = 'polr', seed = 500)
+completeData_mar <- complete(imputed_data_mar,2)
+
+set.seed(1)
+imputed_data_mnar <- mice(mcar_dataset[1:4], m=5, maxit = 50, method = 'polr', seed = 500)
+completeData_mnar <- complete(imputed_data_mnar,2)
+
+```
+
+## mean
+```{r}
+mcar_dataset$imputed_survey_outcome=with(mcar_dataset,impute(survey_outcome,mean))
+mar_dataset$imputed_survey_outcome=with(mar_dataset,impute(survey_outcome,mean))
+mnar_dataset$imputed_survey_outcome=with(mnar_dataset,impute(survey_outcome,mean))
+```
+
+## forward
+```{r}
+mcar_dataset$imputed_survey_outcome_forward=LOCF(as.numeric(mcar_dataset$survey_outcome)+2)
+mar_dataset$imputed_survey_outcome_forward=LOCF(as.numeric(mar_dataset$survey_outcome)+2)
+mnar_dataset$imputed_survey_outcome_forward=LOCF(as.numeric(mnar_dataset$survey_outcome)+2)
+```
+
+## Missforest
+```{r}
+set.seed(1)
+mcar_miss_impute=missForest(mcar_dataset)
+mcar_dataset$imputed_survey_outcome_missforest=mcar_miss_impute$ximp$survey_outcome
+
+set.seed(1)
+mar_miss_impute=missForest(mar_dataset)
+mar_dataset$imputed_survey_outcome_missforest=mar_miss_impute$ximp$survey_outcome
+
+set.seed(1)
+mnar_miss_impute=missForest(mnar_dataset)
+mnar_dataset$imputed_survey_outcome_missforest=mnar_miss_impute$ximp$survey_outcome
+```
 
 
